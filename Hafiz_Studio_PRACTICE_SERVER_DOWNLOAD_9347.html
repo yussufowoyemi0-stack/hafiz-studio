@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Easy Quran Hafiz - Desktop Studio</title>
+
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              400: '#2dd4bf',
+              500: '#00b4d8',
+              600: '#0077b6',
+              700: '#03045e',
+              800: '#0f172a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            quran: ['Amiri', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Sidebar: clean aligned navigation + brand click collapse */
+    #app-sidebar { width: 16rem; transition: width 0.2s ease; position: sticky; top: 0; height: 100vh; min-height: 100vh; overflow-y: auto; flex-shrink: 0; }
+    #app-sidebar.is-collapsed { width: 4.5rem !important; }
+    #sidebar-nav { display: flex; flex-direction: column; gap: 0.375rem; }
+    #sidebar-nav .nav-btn {
+      display: grid !important;
+      grid-template-columns: 1.5rem minmax(0, 1fr) 1.5rem;
+      align-items: center;
+      column-gap: 0.75rem;
+      width: 100%;
+      min-height: 3rem;
+      text-align: left;
+    }
+    #sidebar-nav .nav-btn > i { width: 1.5rem; text-align: center; justify-self: center; }
+    #sidebar-nav .nav-btn > .sidebar-label { min-width: 0; }
+    #sidebar-nav .nav-btn > .sidebar-indicator { width: 1.5rem; justify-self: end; display: flex; align-items: center; justify-content: center; margin-left: 0 !important; }
+    #app-sidebar .sidebar-brand { cursor: pointer; user-select: none; }
+    #app-sidebar.is-collapsed .sidebar-label,
+    #app-sidebar.is-collapsed .sidebar-badge,
+    #app-sidebar.is-collapsed .sidebar-brand-text,
+    #app-sidebar.is-collapsed .sidebar-footer-text,
+    #app-sidebar.is-collapsed .sidebar-footer { display: none !important; }
+    #app-sidebar.is-collapsed .sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+    #app-sidebar.is-collapsed #sidebar-nav { padding-left: 0.75rem; padding-right: 0.75rem; }
+    #app-sidebar.is-collapsed #sidebar-nav .nav-btn {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+      column-gap: 0;
+    }
+    #app-sidebar.is-collapsed #sidebar-nav .nav-btn > i { grid-column: 1; }
+    #app-sidebar.is-collapsed #sidebar-nav .nav-btn > .sidebar-indicator,
+    #app-sidebar.is-collapsed #badge-total-surahs,
+    #app-sidebar.is-collapsed #sidebar-badge-mem,
+    #app-sidebar.is-collapsed #sidebar-badge-dl,
+    #app-sidebar.is-collapsed .studio-status-dot { display: none !important; }
+    #app-sidebar.is-collapsed #sidebar-nav .nav-btn:hover { transform: none; }
+
+    /* Download library: straight rectangular single-line cards */
+    #downloaded-surahs-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      overflow-x: auto;
+    }
+    .downloaded-surah-card {
+      width: 100%;
+      min-width: 720px;
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(148,163,184,.25);
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 2px 8px rgba(15,23,42,.05);
+    }
+    .dark .downloaded-surah-card { background: rgba(30,41,59,.92); border-color: rgba(100,116,139,.28); }
+    .downloaded-surah-info {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .downloaded-surah-name { min-width: 150px; font-weight: 700; }
+    .downloaded-surah-arabic { min-width: 90px; }
+    .downloaded-surah-meta { color: #94a3b8; font-size: .75rem; }
+    .downloaded-status-btn {
+      flex: 0 0 auto;
+      border: 1px solid rgba(16,185,129,.3);
+      background: rgba(16,185,129,.10);
+      color: #059669;
+      padding: .5rem .75rem;
+      border-radius: .65rem;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: default;
+      white-space: nowrap;
+    }
+    .dark .downloaded-status-btn { color: #34d399; }
+    .downloaded-player-btn { flex: 0 0 auto; white-space: nowrap; }
+    @media (max-width: 767px) {
+      #downloaded-surahs-container { margin-left: -0.25rem; width: calc(100% + .5rem); padding-bottom: .25rem; }
+      .downloaded-surah-card { min-width: 660px; }
+    }
+
+    /* Custom Scrollbar for Desktop Cleanliness */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.03);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 180, 216, 0.3);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 180, 216, 0.6);
+    }
+
+    .quran-arabic {
+      font-family: 'Amiri', serif;
+      line-height: 2.2;
+      direction: rtl;
+    }
+
+    /* Glassmorphic player styling */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .dark .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    /* Progress Ring animation transition */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease-in-out;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .verse-active {
+      border-left: 4px solid #00b4d8;
+      background-color: rgba(0, 180, 216, 0.06);
+    }
+    /* Responsive: small phone, medium phone, large phone, laptop */
+    /* Keep navigation visible while the main Quran/library area scrolls independently. */
+    #main-view-container { min-height: 0; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; max-width: 100%; margin: 0; }
+    body { overflow-x: hidden; height: 100vh; }
+    img, svg, video, canvas { max-width: 100%; }
+    input, button, select { max-width: 100%; }
+    .quran-arabic { overflow-wrap: anywhere; word-break: normal; }
+
+    @media (max-width: 374px) {
+      #app-sidebar { width: 3.75rem !important; }
+      #app-sidebar .sidebar-label, #app-sidebar .sidebar-badge, #app-sidebar .sidebar-brand-text, #app-sidebar .sidebar-footer-text, #app-sidebar .sidebar-footer, #app-sidebar .sidebar-indicator { display: none !important; }
+      #app-sidebar .sidebar-brand { justify-content: center; padding-left: .25rem; padding-right: .25rem; }
+      #sidebar-nav { padding: .5rem !important; gap: .25rem; }
+      #sidebar-nav .nav-btn { grid-template-columns: 1fr !important; min-height: 2.9rem; padding: .5rem !important; justify-items: center; }
+      #sidebar-nav .nav-btn > i { grid-column: 1; }
+      header { align-items: stretch; }
+      #header-page-title { font-size: 1rem !important; line-height: 1.25; }
+      header > div:last-child { width: 100% !important; max-width: none !important; }
+      #global-search-input { font-size: 16px; }
+      #view-studio > div:first-child { padding: .75rem !important; }
+      #view-studio > div:first-child > div { width: 100%; }
+      #view-studio .quran-arabic { font-size: clamp(1.45rem, 8vw, 2rem) !important; line-height: 2.05; }
+      #btn-download-surah, #btn-toggle-memorized-studio { flex: 1 1 100%; justify-content: center; min-height: 44px; }
+    }
+
+    @media (min-width: 375px) and (max-width: 479px) {
+      #app-sidebar { width: 4rem !important; }
+      #app-sidebar .sidebar-label, #app-sidebar .sidebar-badge, #app-sidebar .sidebar-brand-text, #app-sidebar .sidebar-footer-text, #app-sidebar .sidebar-footer, #app-sidebar .sidebar-indicator { display: none !important; }
+      #app-sidebar .sidebar-brand { justify-content: center; padding-left: .25rem; padding-right: .25rem; }
+      #sidebar-nav { padding: .5rem !important; }
+      #sidebar-nav .nav-btn { grid-template-columns: 1fr !important; min-height: 3rem; padding: .5rem !important; justify-items: center; }
+      #sidebar-nav .nav-btn > i { grid-column: 1; }
+      #header-page-title { font-size: 1.125rem !important; }
+      header > div:last-child { width: 100% !important; max-width: none !important; }
+      #global-search-input { font-size: 16px; }
+      #view-studio > div:first-child { padding: .9rem !important; }
+      #view-studio > div:first-child > div { width: 100%; }
+      #view-studio .quran-arabic { font-size: clamp(1.55rem, 7.2vw, 2.2rem) !important; line-height: 2.1; }
+    }
+
+    @media (min-width: 480px) and (max-width: 767px) {
+      #app-sidebar { width: 4.5rem !important; }
+      #app-sidebar .sidebar-label, #app-sidebar .sidebar-badge, #app-sidebar .sidebar-brand-text, #app-sidebar .sidebar-footer-text, #app-sidebar .sidebar-footer, #app-sidebar .sidebar-indicator { display: none !important; }
+      #app-sidebar .sidebar-brand { justify-content: center; padding-left: .25rem; padding-right: .25rem; }
+      #sidebar-nav { padding: .65rem !important; }
+      #sidebar-nav .nav-btn { grid-template-columns: 1fr !important; min-height: 3rem; padding: .55rem !important; justify-items: center; }
+      #sidebar-nav .nav-btn > i { grid-column: 1; }
+      header > div:last-child { width: min(100%, 34rem) !important; max-width: none !important; }
+      #view-studio .quran-arabic { font-size: clamp(1.7rem, 6vw, 2.5rem) !important; }
+    }
+
+    @media (min-width: 768px) {
+      #app-sidebar { width: 16rem; }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      button, [role="button"] { min-height: 44px; }
+      #sidebar-nav .nav-btn { min-height: 44px; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex overflow-x-hidden antialiased">
+
+  <!-- SIDEBAR NAVIGATION -->
+  <aside id="app-sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 z-20 border-r border-slate-800 shadow-xl">
+    <div>
+      <!-- App Brand Header -->
+      <div class="h-20 flex items-center gap-3 px-6 border-b border-slate-800/80 sidebar-brand" id="sidebar-brand-toggle" role="button" tabindex="0" aria-label="Collapse or expand navigation" title="Collapse or expand navigation">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
+          <i class="fa-solid fa-book-quran text-xl"></i>
+        </div>
+        <div class="sidebar-brand-text">
+          <h1 class="font-bold text-lg text-white tracking-wide leading-tight">Easy Quran Hafiz</h1>
+          <p class="text-xs text-cyan-400 font-medium">Hafiz Studio Desktop</p>
+        </div>
+      </div>
+
+      <!-- Nav Items -->
+      <nav class="p-4 space-y-1.5" id="sidebar-nav">
+        <button data-target="dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-white bg-cyan-600/20 text-cyan-400 border border-cyan-500/30">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          <span class="sidebar-label">Dashboard</span>
+          <span class="sidebar-indicator" aria-hidden="true"></span>
+        </button>
+        <button data-target="surahs" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-book-open w-5 text-center"></i>
+          <span class="sidebar-label">All Surahs</span>
+          <span class="sidebar-indicator ml-auto text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700" id="badge-total-surahs">114</span>
+        </button>
+        <button data-target="studio" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-headphones w-5 text-center"></i>
+          <span class="sidebar-label">Hafiz Player Studio</span>
+          <span class="sidebar-indicator studio-status-dot ml-auto flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+          </span>
+        </button>
+        <button data-target="memorized" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-circle-check w-5 text-center"></i>
+          <span class="sidebar-label">Memorized</span>
+          <span class="sidebar-indicator sidebar-badge ml-auto text-xs bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full" id="sidebar-badge-mem">0</span>
+        </button>
+        <button data-target="downloaded" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white whitespace-nowrap">
+          <i class="fa-solid fa-download w-5 text-center"></i>
+          <span class="sidebar-label">Downloads</span>
+          <span class="sidebar-indicator sidebar-badge ml-auto text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700" id="sidebar-badge-dl">0</span>
+        </button>
+        <button data-target="settings" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-sliders w-5 text-center"></i>
+          <span class="sidebar-label">Settings & Preferences</span>
+          <span class="sidebar-indicator" aria-hidden="true"></span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer / Quick Reciter Card -->
+    <div class="p-4 border-t border-slate-800/80 sidebar-footer">
+      <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-cyan-400">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div class="overflow-hidden sidebar-footer-text">
+          <div class="text-xs text-slate-400 font-medium truncate">Selected Reciter</div>
+          <div class="text-xs font-semibold text-white truncate" id="sidebar-reciter-name">Mishary Rashid Alafasy</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WORKSPACE CONTENT -->
+  <div class="flex-1 flex flex-col min-w-0 min-h-0 h-screen bg-slate-50 dark:bg-slate-900">
+    
+    <!-- TOP DESKTOP HEADER -->
+    <header class="min-h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+      <div class="flex items-center gap-4">
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight" id="header-page-title">Dashboard Overview</h2>
+      </div>
+
+      <!-- Quick Search Bar & Global Controls -->
+      <div class="flex items-center gap-4 w-1/3 max-w-md">
+        <div class="relative w-full">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="global-search-input" placeholder="Search Surah by name or number (e.g. Al-Fatihah, 36)..." 
+                 class="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 pl-10 pr-4 py-2 rounded-xl text-sm border border-transparent focus:border-cyan-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all">
+        </div>
+        <button id="theme-toggle-btn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 transition-colors" title="Toggle Theme">
+          <i class="fa-solid fa-moon text-lg dark:hidden"></i>
+          <i class="fa-solid fa-sun text-lg hidden dark:block"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE VIEW CONTAINER -->
+    <main class="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 relative" id="main-view-container">
+
+      <!-- ================= VIEW 1: DASHBOARD ================= -->
+      <section id="view-dashboard" class="app-screen space-y-8">
+        
+        <!-- TOP STATS & GAUGES ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Memorization Progress Card -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between gap-6">
+            <div class="space-y-2">
+              <span class="text-xs font-semibold tracking-wider text-cyan-600 dark:text-cyan-400 uppercase">Overall Memorization</span>
+              <div class="text-3xl font-extrabold text-slate-900 dark:text-white" id="dash-percentage">12.3%</div>
+              <p class="text-xs text-slate-500 dark:text-slate-400"><span id="dash-verses-count" class="font-medium text-slate-700 dark:text-slate-200">767</span> of 6,236 Verses Memorized</p>
+              <div class="pt-2 flex items-center gap-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                  <i class="fa-solid fa-circle-arrow-up mr-1 text-[10px]"></i> +3 Surahs this month
+                </span>
+              </div>
+            </div>
+            
+            <!-- SVG Circular Gauge -->
+            <div class="relative w-32 h-32 shrink-0 flex items-center justify-center">
+              <svg class="w-full h-full" viewBox="0 0 100 100">
+                <circle class="text-slate-100 dark:text-slate-700 stroke-current" stroke-width="10" cx="50" cy="50" r="40" fill="transparent"></circle>
+                <circle id="dash-progress-ring" class="progress-ring-circle text-cyan-500 stroke-current" stroke-width="10" stroke-linecap="round" cx="50" cy="50" r="40" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="220.3"></circle>
+              </svg>
+              <i class="fa-solid fa-award text-2xl text-cyan-500 absolute"></i>
+            </div>
+          </div>
+
+          <!-- Quick Metrics Bar -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Downloaded Audio</span>
+                <div class="text-2xl font-bold text-slate-800 dark:text-white mt-1" id="dash-dl-count">0 / 114 Surahs</div>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 dark:bg-cyan-950/50 text-cyan-500 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-slate-500 font-medium">
+                <span>Storage Cached</span>
+                <span>3.5%</span>
+              </div>
+              <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                <div class="bg-cyan-500 h-full rounded-full" style="width: 3.5%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Memorized Surahs Summary -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Memorized Surahs</span>
+                <div class="text-2xl font-bold text-slate-800 dark:text-white mt-1" id="dash-mem-surahs-count">35 / 114 Surahs</div>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-slate-500 font-medium">
+                <span>Surahs Complete</span>
+                <span id="dash-mem-percent-lbl">30.7%</span>
+              </div>
+              <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" id="dash-mem-bar" style="width: 30.7%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RECENT SURAHS & QUICK REPETITION PRACTICE SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Recent Surahs Grid -->
+          <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Recent Memorization Sessions</h3>
+              <button data-target="surahs" class="nav-btn text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline">View All Surahs &rarr;</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="dashboard-recent-grid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Daily Hafiz Tip Card -->
+          <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg flex flex-col justify-between border border-slate-700 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-cyan-400 pointer-events-none">
+              <i class="fa-solid fa-kaaba"></i>
+            </div>
+            <div class="space-y-4 relative z-10">
+              <span class="inline-block px-3 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">
+                Memorization Strategy
+              </span>
+              <h4 class="text-xl font-bold leading-snug">The 5x Repetition Rule for Retention</h4>
+              <p class="text-sm text-slate-300 leading-relaxed">
+                Recite each new verse 5-10 times using our loop player while looking at the Arabic text, then repeat 5 times from memory before progressing to the next verse.
+              </p>
+            </div>
+            <div class="pt-6 relative z-10">
+              <button onclick="openHafizStudio(1)" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-xl text-sm transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-play"></i> Start Daily Practice
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= VIEW 2: ALL SURAHS ================= -->
+      <section id="view-surahs" class="app-screen space-y-6 hidden">
+        
+        <!-- Controls & Filter Toolbar -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <button class="surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-cyan-500 text-white" data-filter="all">All Surahs (114)</button>
+            <button class="surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200" data-filter="memorized">Memorized</button>
+            <button class="surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200" data-filter="downloaded">Downloaded Audio</button>
+            <button class="surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200" data-filter="meccan">Meccan</button>
+            <button class="surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200" data-filter="medinan">Medinan</button>
+          </div>
+
+          <!-- Grid/Table Toggle -->
+          <div class="flex items-center gap-2 border-l border-slate-200 dark:border-slate-700 pl-4">
+            <button id="btn-view-grid" class="p-2 rounded-lg bg-cyan-500 text-white" title="Grid View"><i class="fa-solid fa-border-all"></i></button>
+            <button id="btn-view-table" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" title="Table View"><i class="fa-solid fa-list"></i></button>
+          </div>
+        </div>
+
+        <!-- Surahs Display Container -->
+        <div id="surahs-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Dynamically populated -->
+        </div>
+
+      </section>
+
+      <!-- ================= VIEW 3: HAFIZ STUDIO / PLAYER ================= -->
+      <section id="view-studio" class="app-screen space-y-4 sm:space-y-5 lg:space-y-6 hidden flex flex-col min-h-0">
+        
+        <!-- Studio Control Header Bar -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center font-bold text-lg" id="studio-surah-num">
+              1
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span id="studio-surah-title">Al-Fatihah</span>
+                <span class="text-sm font-normal text-slate-400" id="studio-surah-meaning">(The Opener)</span>
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Verse <span id="studio-verse-current">1</span> of <span id="studio-verse-total">7</span> &bull; <span id="studio-revelation-type">Meccan</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Verse Range Controller -->
+          <div class="flex items-center gap-5 bg-slate-50 dark:bg-slate-900/60 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Verse</span>
+              <button id="start-verse-minus" type="button" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500 font-bold text-lg leading-none" aria-label="Decrease start verse">−</button>
+              <span id="start-verse-value" class="min-w-[2rem] text-center text-sm font-bold text-slate-700 dark:text-slate-200">1</span>
+              <button id="start-verse-plus" type="button" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500 font-bold text-lg leading-none" aria-label="Increase start verse">+</button>
+            </div>
+            <div class="h-8 w-px bg-slate-200 dark:bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">End Verse</span>
+              <button id="end-verse-minus" type="button" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500 font-bold text-lg leading-none" aria-label="Decrease end verse">−</button>
+              <span id="end-verse-value" class="min-w-[2rem] text-center text-sm font-bold text-slate-700 dark:text-slate-200">1</span>
+              <button id="end-verse-plus" type="button" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500 font-bold text-lg leading-none" aria-label="Increase end verse">+</button>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-3">
+            <button id="btn-download-surah" class="px-4 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500 hover:text-white font-semibold text-xs transition-all flex items-center gap-2" title="Download this Surah audio">
+              <i class="fa-solid fa-download"></i> <span id="lbl-download-surah">Download Surah</span>
+            </button>
+            <button id="btn-toggle-memorized-studio" class="px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold text-xs transition-all flex items-center gap-2">
+              <i class="fa-regular fa-circle-check"></i> <span id="lbl-studio-memorized">Mark as Memorized</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Verses Workspace (Scrollable Reader) -->
+        <div class="w-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto space-y-4 sm:space-y-5 lg:space-y-6 min-h-[240px]" id="verses-display-container">
+          <!-- Verses will be dynamically populated -->
+        </div>
+
+        <!-- BOTTOM AUDIO PLAYER BAR (DESKTOP STUDIO CONTROLLER) -->
+        <div class="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
+          
+          <!-- Reciter Details -->
+          <div class="flex items-center gap-4 w-full md:w-1/4">
+            <div class="w-10 h-10 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-music"></i>
+            </div>
+            <div class="overflow-hidden">
+              <div class="text-sm font-semibold truncate" id="player-reciter">Mishary Rashid Alafasy</div>
+              <div class="text-xs text-slate-400 truncate"><span id="player-current-surah">Al-Fatihah</span> - Verse <span id="player-current-verse">1</span></div>
+            </div>
+          </div>
+
+          <!-- Player Navigation & Play Button -->
+          <div class="flex flex-col items-center gap-2 w-full md:w-2/4">
+            <div class="flex items-center gap-6">
+              <button id="btn-player-auto-advance" class="text-slate-400 hover:text-cyan-400 text-sm" title="Auto-advance Verse"><i class="fa-solid fa-arrows-to-dot"></i></button>
+              <button id="btn-player-prev" class="text-slate-300 hover:text-white text-lg"><i class="fa-solid fa-backward-step"></i></button>
+              <button id="btn-player-play" class="w-12 h-12 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold flex items-center justify-center text-xl shadow-lg shadow-cyan-500/30 transition-transform active:scale-95">
+                <i class="fa-solid fa-play ml-0.5"></i>
+              </button>
+              <button id="btn-player-next" class="text-slate-300 hover:text-white text-lg"><i class="fa-solid fa-forward-step"></i></button>
+              <button id="btn-player-speed" class="text-slate-400 hover:text-cyan-400 text-xs font-semibold border border-slate-700 px-2 py-1 rounded" title="Playback Speed">1.0x</button>
+              <button id="btn-player-repeat" class="text-slate-400 hover:text-cyan-400 text-sm border border-slate-700 px-2 py-1 rounded inline-flex items-center gap-1" title="Repeat selected verse range" aria-label="Repeat selected verse range">
+                <i class="fa-solid fa-repeat"></i>
+                <span id="repeat-count-display" class="font-bold min-w-[1rem] text-center hidden">0</span>
+              </button>
+              <button id="btn-player-loop" class="text-slate-400 hover:text-cyan-400 text-sm border border-slate-700 px-2 py-1 rounded inline-flex items-center gap-1" title="Loop selected verse range: OFF" aria-label="Loop selected verse range: OFF">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+
+            <!-- Scrubber Timeline -->
+            <div class="w-full flex items-center gap-3 text-xs text-slate-400">
+              <span id="player-time-curr">00:00</span>
+              <input type="range" id="player-seek-bar" value="0" min="0" max="100" class="w-full accent-cyan-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+              <span id="player-time-total">00:00</span>
+            </div>
+          </div>
+
+          <!-- Audio Options & Toggle Switches -->
+          <div class="flex items-center justify-end gap-4 w-full md:w-1/4 text-xs text-slate-400">
+            <i class="fa-solid fa-volume-high text-sm text-slate-300"></i>
+            <input type="range" id="player-volume" min="0" max="1" step="0.05" value="1" class="w-20 accent-cyan-500 h-1 bg-slate-700 rounded-lg">
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ================= VIEW 4: MEMORIZED FILTERED ================= -->
+      <section id="view-memorized" class="app-screen space-y-6 hidden">
+        <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-6 rounded-2xl flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-2xl">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-200">Your Completed Surahs</h3>
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">These surahs are marked as fully memorized in your progress store.</p>
+          </div>
+        </div>
+        <div id="memorized-surahs-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Dynamically Populated -->
+        </div>
+      </section>
+
+      <!-- ================= VIEW 5: DOWNLOADED AUDIO ================= -->
+      <section id="view-downloaded" class="app-screen space-y-6 hidden">
+        <div id="downloaded-surahs-container" class="w-full">
+          <!-- Dynamically Populated -->
+        </div>
+      </section>
+
+      <!-- ================= VIEW 6: SETTINGS ================= -->
+      <section id="view-settings" class="app-screen space-y-6 hidden">
+        <div class="max-w-3xl mx-auto space-y-6">
+          
+          <!-- Typography Customization -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-6">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-font text-cyan-500"></i> Typography & Reader Preferences
+            </h3>
+
+            <!-- Arabic Size Slider -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="font-medium text-slate-700 dark:text-slate-300">Arabic Script Font Size</span>
+                <span class="font-bold text-cyan-500" id="setting-arabic-val">32px</span>
+              </div>
+              <input type="range" id="setting-arabic-slider" min="20" max="50" value="32" class="w-full accent-cyan-500">
+            </div>
+
+            <!-- Translation Size Slider -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="font-medium text-slate-700 dark:text-slate-300">Translation Font Size</span>
+                <span class="font-bold text-cyan-500" id="setting-trans-val">15px</span>
+              </div>
+              <input type="range" id="setting-trans-slider" min="12" max="24" value="15" class="w-full accent-cyan-500">
+            </div>
+
+            <!-- Toggles -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700/60 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-medium text-slate-800 dark:text-slate-200">Show Transliteration</div>
+                  <div class="text-xs text-slate-500">Display English pronunciation guide under Arabic verses</div>
+                </div>
+                <input type="checkbox" id="setting-toggle-transliteration" checked class="w-5 h-5 accent-cyan-500 cursor-pointer">
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-medium text-slate-800 dark:text-slate-200">Show English Translation</div>
+                  <div class="text-xs text-slate-500">Display English translation beneath verses</div>
+                </div>
+                <input type="checkbox" id="setting-toggle-translation" checked class="w-5 h-5 accent-cyan-500 cursor-pointer">
+              </div>
+            </div>
+          </div>
+
+          <!-- Reciter Audio Selection -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-microphone-lines text-cyan-500"></i> Audio & Reciter Configuration
+            </h3>
+
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Primary Reciter Audio Stream</label>
+              <select id="setting-reciter-select" class="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500">
+                <option value="ar.alafasy">Mishary Rashid Alafasy</option>
+                <option value="ar.abdulbasitmurattal">Abdul Basit Abdul Samad (Murattal)</option>
+                <option value="ar.husary">Mahmoud Khalil Al-Husary</option>
+                <option value="ar.minshawi">Mohamed Siddiq Al-Minshawi</option>
+                <option value="ar.sudais">Abdur-Rahman As-Sudais</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Data Reset -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-bold text-red-600 dark:text-red-400">Reset Local Memorization Data</h4>
+              <p class="text-xs text-slate-500">Clear all saved progress and settings from this browser.</p>
+            </div>
+            <button id="btn-reset-data" class="px-4 py-2 bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white rounded-xl text-xs font-semibold transition-all">
+              Reset Progress Data
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Audio Element (Hidden) -->
+  <audio id="quran-audio-player" class="hidden"></audio>
+
+  <script>
+    // ================= DATA STORE: ALL 114 SURAHS =================
+    const SURAH_DATABASE = [
+      { id: 1, name: 'Al-Fatihah', arabic: 'الفاتحة', meaning: 'The Opener', verses: 7, type: 'Meccan', downloaded: false },
+      { id: 2, name: 'Al-Baqarah', arabic: 'البقرة', meaning: 'The Cow', verses: 286, type: 'Medinan', downloaded: false },
+      { id: 3, name: 'Ali \'Imran', arabic: 'آل عمران', meaning: 'Family of Imran', verses: 200, type: 'Medinan', downloaded: false },
+      { id: 4, name: 'An-Nisa', arabic: 'النساء', meaning: 'The Women', verses: 176, type: 'Medinan', downloaded: false },
+      { id: 5, name: 'Al-Ma\'idah', arabic: 'المائدة', meaning: 'The Table Spread', verses: 120, type: 'Medinan', downloaded: false },
+      { id: 6, name: 'Al-An\'am', arabic: 'الأنعام', meaning: 'The Cattle', verses: 165, type: 'Meccan', downloaded: false },
+      { id: 7, name: 'Al-A\'raf', arabic: 'الأعراف', meaning: 'The Heights', verses: 206, type: 'Meccan', downloaded: false },
+      { id: 8, name: 'Al-Anfal', arabic: 'الأنفال', meaning: 'The Spoils of War', verses: 75, type: 'Medinan', downloaded: false },
+      { id: 9, name: 'At-Tawbah', arabic: 'التوبة', meaning: 'The Repentance', verses: 129, type: 'Medinan', downloaded: false },
+      { id: 10, name: 'Yunus', arabic: 'يونس', meaning: 'Jonah', verses: 109, type: 'Meccan', downloaded: false },
+      { id: 11, name: 'Hud', arabic: 'هود', meaning: 'Hud', verses: 123, type: 'Meccan', downloaded: false },
+      { id: 12, name: 'Yusuf', arabic: 'يوسف', meaning: 'Joseph', verses: 111, type: 'Meccan', downloaded: false },
+      { id: 13, name: 'Ar-Ra\'d', arabic: 'الرعد', meaning: 'The Thunder', verses: 43, type: 'Medinan', downloaded: false },
+      { id: 14, name: 'Ibrahim', arabic: 'إبراهيم', meaning: 'Abraham', verses: 52, type: 'Meccan', downloaded: false },
+      { id: 15, name: 'Al-Hijr', arabic: 'الحجر', meaning: 'The Rocky Tract', verses: 99, type: 'Meccan', downloaded: false },
+      { id: 16, name: 'An-Nahl', arabic: 'النحل', meaning: 'The Bee', verses: 128, type: 'Meccan', downloaded: false },
+      { id: 17, name: 'Al-Isra', arabic: 'الإسراء', meaning: 'The Night Journey', verses: 111, type: 'Meccan', downloaded: false },
+      { id: 18, name: 'Al-Kahf', arabic: 'الكهف', meaning: 'The Cave', verses: 110, type: 'Meccan', downloaded: false },
+      { id: 19, name: 'Maryam', arabic: 'مريم', meaning: 'Mary', verses: 98, type: 'Meccan', downloaded: false },
+      { id: 20, name: 'Taha', arabic: 'طه', meaning: 'Ta-Ha', verses: 135, type: 'Meccan', downloaded: false },
+      { id: 36, name: 'Ya-Sin', arabic: 'يس', meaning: 'Ya Sin', verses: 83, type: 'Meccan', downloaded: false },
+      { id: 55, name: 'Ar-Rahman', arabic: 'الرحمن', meaning: 'The Beneficent', verses: 78, type: 'Medinan', downloaded: false },
+      { id: 67, name: 'Al-Mulk', arabic: 'الملك', meaning: 'The Sovereignty', verses: 30, type: 'Meccan', downloaded: false },
+      { id: 108, name: 'Al-Kawthar', arabic: 'الكوثر', meaning: 'The Abundance', verses: 3, type: 'Meccan', downloaded: false },
+      { id: 109, name: 'Al-Kafirun', arabic: 'الكافرون', meaning: 'The Disbelievers', verses: 6, type: 'Meccan', downloaded: false },
+      { id: 110, name: 'An-Nasr', arabic: 'النصر', meaning: 'The Divine Support', verses: 3, type: 'Medinan', downloaded: false },
+      { id: 111, name: 'Al-Masad', arabic: 'المسد', meaning: 'The Palm Fiber', verses: 5, type: 'Meccan', downloaded: false },
+      { id: 112, name: 'Al-Ikhlas', arabic: 'الإخلاص', meaning: 'The Sincerity', verses: 4, type: 'Meccan', downloaded: false },
+      { id: 113, name: 'Al-Falaq', arabic: 'الفلق', meaning: 'The Daybreak', verses: 5, type: 'Meccan', downloaded: false },
+      { id: 114, name: 'An-Nas', arabic: 'الناس', meaning: 'Mankind', verses: 6, type: 'Meccan', downloaded: false }
+    ];
+
+    const SURAH_VERSE_COUNTS = [7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6];
+
+// Populate remaining surahs with their real names (1-114). Existing entries above are preserved exactly.
+    const REAL_SURAH_NAMES = ["Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Taha", "Al-Anbiya", "Al-Hajj", "Al-Mu’minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi’ah", "Al-Hadid", "Al-Mujadilah", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu’ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Layl", "Ad-Duha", "Ash-Sharh", "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat", "Al-Qari'ah", "At-Takathur", "Al-Asr", "Al-Humazah", "Al-Fil", "Quraysh", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"];
+    for (let i = 1; i <= 114; i++) {
+      if (!SURAH_DATABASE.some(s => s.id === i)) {
+        SURAH_DATABASE.push({
+          id: i,
+          name: REAL_SURAH_NAMES[i - 1],
+          arabic: `سورة ${i}`,
+          meaning: 'Quran Surah',
+          verses: SURAH_VERSE_COUNTS[i - 1],
+          type: i % 2 === 0 ? 'Meccan' : 'Medinan',
+          downloaded: false
+        });
+      }
+    }
+    SURAH_DATABASE.sort((a,b) => a.id - b.id);
+
+    // ================= APPLICATION STATE =================
+    let appState = {
+      memorizedIds: JSON.parse(localStorage.getItem('eqh_memorized') || '[1, 108, 111, 112, 113, 114]'),
+      reciter: localStorage.getItem('eqh_reciter') || 'ar.alafasy',
+      arabicFontSize: parseInt(localStorage.getItem('eqh_arabic_size') || '32'),
+      transFontSize: parseInt(localStorage.getItem('eqh_trans_size') || '15'),
+      showTransliteration: localStorage.getItem('eqh_show_translit') !== 'false',
+      showTranslation: localStorage.getItem('eqh_show_trans') !== 'false',
+      currentSurah: null,
+      currentVerseIndex: 0,
+      versesData: [],
+      startVerseIndex: 0,
+      endVerseIndex: 0,
+      repeatRange: false,
+      repeatCount: 0,
+      repeatRemaining: 0,
+      repeatVerseIndex: null,
+      loopRange: false,
+      isPlaying: false,
+      speed: 1.0,
+      layoutMode: 'grid',
+      activeFilter: 'all'
+    };
+
+    // DOM Elements Cache
+    const audioElement = document.getElementById('quran-audio-player');
+
+    // ================= INITIALIZATION & SETUP =================
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initTheme();
+      initSettings();
+      initDownloadState();
+      renderDashboard();
+      renderSurahsView();
+      
+      // Default to loading Surah Al-Fatihah into Studio
+      loadSurahIntoStudio(1, false);
+    });
+
+    // ================= NAVIGATION SYSTEM =================
+    function initNavigation() {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = btn.getAttribute('data-target');
+          switchView(target);
+        });
+      });
+
+      // View switcher helper
+      function switchView(viewName) {
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('.nav-btn').forEach(b => {
+          b.classList.remove('bg-cyan-600/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+          b.classList.add('text-slate-300');
+        });
+
+        const targetScreen = document.getElementById(`view-${viewName}`);
+        if (targetScreen) targetScreen.classList.remove('hidden');
+
+        const activeNavBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
+        if (activeNavBtn) {
+          activeNavBtn.classList.add('bg-cyan-600/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+        }
+
+        // Header titles
+        const titles = {
+          dashboard: 'Dashboard Overview',
+          surahs: 'All Surahs Directory',
+          studio: 'Hafiz Practice Studio',
+          memorized: 'Memorized Surahs',
+          downloaded: 'Downloaded Audio Library',
+          settings: 'Settings & Preferences'
+        };
+        document.getElementById('header-page-title').textContent = titles[viewName] || 'Easy Quran Hafiz';
+
+        if (viewName === 'memorized') renderFilteredView('memorized');
+        if (viewName === 'downloaded') { refreshDownloadedState().then(() => renderFilteredView('downloaded')); }
+      }
+
+      // Global Search
+      document.getElementById('global-search-input').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query) {
+          switchView('surahs');
+          filterSurahs(query);
+        } else {
+          renderSurahsView();
+        }
+      });
+    }
+
+    // ================= DASHBOARD RENDERER =================
+    function renderDashboard() {
+      const memorizedCount = appState.memorizedIds.length;
+      const memPercent = ((memorizedCount / 114) * 100).toFixed(1);
+      
+      // Calculate total memorized verses
+      let totalVersesMemorized = 0;
+      SURAH_DATABASE.forEach(s => {
+        if (appState.memorizedIds.includes(s.id)) {
+          totalVersesMemorized += s.verses;
+        }
+      });
+
+      document.getElementById('dash-percentage').textContent = `${((totalVersesMemorized / 6236) * 100).toFixed(1)}%`;
+      document.getElementById('dash-verses-count').textContent = totalVersesMemorized.toLocaleString();
+      document.getElementById('dash-mem-surahs-count').textContent = `${memorizedCount} / 114 Surahs`;
+      document.getElementById('sidebar-badge-mem').textContent = memorizedCount;
+      document.getElementById('dash-mem-percent-lbl').textContent = `${memPercent}%`;
+      document.getElementById('dash-mem-bar').style.width = `${memPercent}%`;
+
+      // Update Circular SVG Gauge
+      const circle = document.getElementById('dash-progress-ring');
+      const circumference = 251.2;
+      const offset = circumference - ((totalVersesMemorized / 6236) * circumference);
+      circle.style.strokeDashoffset = offset;
+
+      // Render Dashboard Recent Cards
+      const recentGrid = document.getElementById('dashboard-recent-grid');
+      recentGrid.innerHTML = '';
+      
+      const recents = SURAH_DATABASE.slice(0, 4);
+      recents.forEach(surah => {
+        const isMem = appState.memorizedIds.includes(surah.id);
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between hover:border-cyan-500 transition-all cursor-pointer";
+        card.onclick = () => openHafizStudio(surah.id);
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl ${isMem ? 'bg-emerald-500/10 text-emerald-500' : 'bg-cyan-500/10 text-cyan-500'} font-bold flex items-center justify-center text-sm">
+              ${surah.id}
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                ${surah.name} <span class="quran-arabic text-sm text-slate-400 font-normal">(${surah.arabic})</span>
+              </div>
+              <div class="text-xs text-slate-400">${surah.meaning} &bull; ${surah.verses} Verses</div>
+            </div>
+          </div>
+          <button class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-cyan-500 hover:text-white text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-play text-xs"></i>
+          </button>
+        `;
+        recentGrid.appendChild(card);
+      });
+    }
+
+    // ================= SURAHS DIRECTORY RENDERER =================
+    function renderSurahsView() {
+      const container = document.getElementById('surahs-container');
+      container.innerHTML = '';
+
+      // Set Grid or Table layout class
+      if (appState.layoutMode === 'grid') {
+        container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4";
+      } else {
+        container.className = "space-y-2";
+      }
+
+      SURAH_DATABASE.forEach(surah => {
+        const isMem = appState.memorizedIds.includes(surah.id);
+
+        if (appState.layoutMode === 'grid') {
+          const card = document.createElement('div');
+          card.className = `bg-white dark:bg-slate-800 p-5 rounded-2xl border ${isMem ? 'border-emerald-500/40' : 'border-slate-200 dark:border-slate-700/60'} shadow-sm hover:shadow-md hover:border-cyan-500 transition-all cursor-pointer group relative overflow-hidden`;
+          card.onclick = () => openHafizStudio(surah.id);
+          card.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-white transition-colors">
+                ${surah.id}
+              </div>
+              <div class="flex items-center gap-1.5">
+                ${isMem ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">Memorized</span>' : ''}
+                ${surah.downloaded ? '<i class="fa-solid fa-circle-down text-xs text-cyan-500" title="Audio Downloaded"></i>' : ''}
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-baseline">
+              <div>
+                <h4 class="font-bold text-slate-900 dark:text-white text-base">${surah.name}</h4>
+                <p class="text-xs text-slate-400 mt-0.5">${surah.meaning}</p>
+              </div>
+              <div class="quran-arabic text-lg text-slate-700 dark:text-slate-300">${surah.arabic}</div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+              <span>${surah.verses} Verses</span>
+              <span>${surah.type}</span>
+            </div>
+          `;
+          container.appendChild(card);
+        } else {
+          // Table Row View
+          const row = document.createElement('div');
+          row.className = "bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 flex items-center justify-between hover:border-cyan-500 cursor-pointer transition-all";
+          row.onclick = () => openHafizStudio(surah.id);
+          row.innerHTML = `
+            <div class="flex items-center gap-4">
+              <span class="w-8 text-center font-bold text-slate-400 text-sm">${surah.id}</span>
+              <div class="font-bold text-slate-800 dark:text-white text-sm">${surah.name}</div>
+              <div class="quran-arabic text-sm text-slate-400">(${surah.arabic})</div>
+            </div>
+            <div class="flex items-center gap-6 text-xs text-slate-400">
+              <span>${surah.verses} Verses</span>
+              <span>${surah.type}</span>
+              ${isMem ? '<span class="px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-600">Memorized</span>' : ''}
+            </div>
+          `;
+          container.appendChild(row);
+        }
+      });
+
+      // Filter Buttons setup
+      document.querySelectorAll('.surah-filter-btn').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('.surah-filter-btn').forEach(b => {
+            b.className = "surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200";
+          });
+          btn.className = "surah-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-cyan-500 text-white";
+          filterSurahsByCategory(btn.getAttribute('data-filter'));
+        };
+      });
+
+      // Grid/Table Toggle Handlers
+      document.getElementById('btn-view-grid').onclick = () => {
+        appState.layoutMode = 'grid';
+        document.getElementById('btn-view-grid').className = "p-2 rounded-lg bg-cyan-500 text-white";
+        document.getElementById('btn-view-table').className = "p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300";
+        renderSurahsView();
+      };
+      document.getElementById('btn-view-table').onclick = () => {
+        appState.layoutMode = 'table';
+        document.getElementById('btn-view-table').className = "p-2 rounded-lg bg-cyan-500 text-white";
+        document.getElementById('btn-view-grid').className = "p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300";
+        renderSurahsView();
+      };
+    }
+
+    function filterSurahs(query) {
+      const container = document.getElementById('surahs-container');
+      const cards = container.children;
+      SURAH_DATABASE.forEach((surah, idx) => {
+        const matches = surah.name.toLowerCase().includes(query) || surah.id.toString() === query;
+        if (cards[idx]) cards[idx].style.display = matches ? 'block' : 'none';
+      });
+    }
+
+    function filterSurahsByCategory(category) {
+      const container = document.getElementById('surahs-container');
+      container.innerHTML = '';
+      SURAH_DATABASE.forEach(surah => {
+        const isMem = appState.memorizedIds.includes(surah.id);
+        let show = false;
+        if (category === 'all') show = true;
+        if (category === 'memorized' && isMem) show = true;
+        if (category === 'downloaded' && surah.downloaded) show = true;
+        if (category === 'meccan' && surah.type === 'Meccan') show = true;
+        if (category === 'medinan' && surah.type === 'Medinan') show = true;
+
+        if (show) {
+          const card = document.createElement('div');
+          card.className = "bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm hover:border-cyan-500 transition-all cursor-pointer";
+          card.onclick = () => openHafizStudio(surah.id);
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-500 font-bold flex items-center justify-center text-xs">${surah.id}</span>
+              <span class="quran-arabic font-bold text-slate-800 dark:text-white">${surah.arabic}</span>
+            </div>
+            <div class="mt-3">
+              <div class="font-bold text-slate-900 dark:text-white">${surah.name}</div>
+              <div class="text-xs text-slate-400">${surah.meaning}</div>
+            </div>
+          `;
+          container.appendChild(card);
+        }
+      });
+    }
+
+    function renderFilteredView(type) {
+      const containerId = type === 'memorized' ? 'memorized-surahs-container' : 'downloaded-surahs-container';
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+
+      const matchingSurahs = SURAH_DATABASE.filter(surah =>
+        type === 'memorized' ? appState.memorizedIds.includes(surah.id) : surah.downloaded
+      );
+
+      if (type === 'downloaded' && matchingSurahs.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-cloud-arrow-down text-4xl opacity-30 mb-3"></i>
+            <p class="text-sm font-medium opacity-60">No downloads</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (type === 'downloaded') {
+        matchingSurahs.forEach(surah => {
+          const card = document.createElement('div');
+          card.className = 'downloaded-surah-card';
+          card.innerHTML = `
+            <div class="downloaded-surah-info">
+              <div class="w-9 h-9 shrink-0 rounded-lg bg-cyan-500/10 text-cyan-500 font-bold flex items-center justify-center text-xs">${surah.id}</div>
+              <div class="downloaded-surah-name text-slate-900 dark:text-white">${surah.name}</div>
+              <div class="downloaded-surah-arabic quran-arabic text-slate-500 dark:text-slate-300">${surah.arabic}</div>
+              <div class="downloaded-surah-meta">${surah.verses} Verses</div>
+              <div class="downloaded-surah-meta">${surah.type}</div>
+            </div>
+            <button type="button" class="downloaded-status-btn" aria-disabled="true">
+              <i class="fa-solid fa-circle-check mr-1"></i> Downloaded ✓
+            </button>
+            <button type="button" class="downloaded-player-btn px-3 py-2 rounded-lg bg-cyan-500 text-white text-xs font-semibold hover:bg-cyan-600 transition-all">
+              <i class="fa-solid fa-headphones mr-1"></i> Take me to Player
+            </button>
+          `;
+          card.querySelector('.downloaded-player-btn').onclick = (event) => {
+            event.stopPropagation();
+            openHafizStudio(surah.id);
+          };
+          container.appendChild(card);
+        });
+        return;
+      }
+
+      matchingSurahs.forEach(surah => {
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm hover:border-cyan-500 transition-all cursor-pointer flex items-center justify-between";
+        card.onclick = () => openHafizStudio(surah.id);
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 font-bold flex items-center justify-center">${surah.id}</div>
+            <div>
+              <div class="font-bold text-slate-900 dark:text-white">${surah.name} <span class="quran-arabic text-slate-400">(${surah.arabic})</span></div>
+              <div class="text-xs text-slate-400">${surah.verses} Verses</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ================= HAFIZ STUDIO AUDIO & READER =================
+    async function loadSurahIntoStudio(surahId, autoPlay = false) {
+      const surah = SURAH_DATABASE.find(s => s.id === surahId) || SURAH_DATABASE[0];
+      appState.currentSurah = surah;
+      appState.currentVerseIndex = 0;
+
+      // Update Studio Header UI
+      document.getElementById('studio-surah-num').textContent = surah.id;
+      document.getElementById('studio-surah-title').textContent = surah.name;
+      document.getElementById('studio-surah-meaning').textContent = `(${surah.meaning})`;
+      document.getElementById('studio-verse-total').textContent = surah.verses;
+      document.getElementById('studio-revelation-type').textContent = surah.type;
+      
+      // Update Player Footer Text
+      document.getElementById('player-current-surah').textContent = surah.name;
+      document.getElementById('player-current-verse').textContent = '1';
+
+      updateMemorizedButtonState();
+
+      // Show Loading State in Reader Container
+      const displayContainer = document.getElementById('verses-display-container');
+      displayContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-64 space-y-4">
+          <div class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-sm font-medium text-slate-500">Loading Surah ${surah.name} audio & verses...</p>
+        </div>
+      `;
+
+      try {
+        // Fetch Arabic text, English translation, Transliteration & Audio from Al Quran API
+        const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.sahih,en.transliteration,${appState.reciter}`);
+        const data = await response.json();
+
+        if (data.code === 200) {
+          const uthmani = data.data[0].ayahs;
+          const translation = data.data[1].ayahs;
+          const transliteration = data.data[2].ayahs;
+          const audioAyahs = data.data[3].ayahs;
+
+          // Keep every Arabic verse, translation, transliteration and audio item
+          // matched by its actual ayah number, never just by array position.
+          const translationByVerse = new Map(translation.map(a => [a.numberInSurah, a.text]));
+          const transliterationByVerse = new Map(transliteration.map(a => [a.numberInSurah, a.text]));
+          const audioByVerse = new Map(audioAyahs.map(a => [a.numberInSurah, a.audio]));
+
+          appState.versesData = uthmani.map((ayah) => ({
+            number: ayah.numberInSurah,
+            arabic: ayah.text,
+            translation: translationByVerse.get(ayah.numberInSurah) || '',
+            transliteration: transliterationByVerse.get(ayah.numberInSurah) || '',
+            audioUrl: audioByVerse.get(ayah.numberInSurah) || ''
+          }));
+
+          renderVersesDisplay();
+          initializeVerseRangeSelectors();
+          setActiveVerse(0);
+
+          if (autoPlay) {
+            playAudio();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load verses from API:", err);
+        // Do not substitute a verse from another Surah when the network fails.
+        // The previous fallback could incorrectly show Al-Fatihah 1:1 for every Surah.
+        appState.versesData = [];
+        displayContainer.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-64 space-y-3 text-center px-4">
+            <i class="fa-solid fa-wifi text-2xl text-slate-400"></i>
+            <p class="text-sm font-medium text-slate-500">Quran verses could not be loaded.</p>
+            <p class="text-xs text-slate-400">Please reconnect and open this Surah again. No incorrect verse will be substituted.</p>
+          </div>
+        `;
+      }
+    }
+
+    function openHafizStudio(surahId) {
+      // Switch to Studio View
+      document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+      document.getElementById('view-studio').classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('bg-cyan-600/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+      });
+      const studioBtn = document.querySelector('.nav-btn[data-target="studio"]');
+      if (studioBtn) studioBtn.classList.add('bg-cyan-600/20', 'text-cyan-400', 'border', 'border-cyan-500/30');
+
+      document.getElementById('header-page-title').textContent = "Hafiz Practice Studio";
+
+      loadSurahIntoStudio(surahId, false);
+    }
+
+    function renderVersesDisplay() {
+      const container = document.getElementById('verses-display-container');
+      container.innerHTML = '';
+
+      const index = Math.max(0, Math.min(appState.currentVerseIndex, appState.versesData.length - 1));
+      const verse = appState.versesData[index];
+      if (!verse) return;
+
+      const verseCard = document.createElement('div');
+      verseCard.id = `verse-card-${index}`;
+      verseCard.className = 'p-3 sm:p-5 md:p-6 rounded-2xl border-2 border-cyan-500 bg-cyan-500/5 dark:bg-cyan-500/10 transition-all space-y-4 cursor-pointer shadow-md w-full';
+      verseCard.onclick = () => {
+        setActiveVerse(index);
+        playAudio();
+      };
+
+      verseCard.innerHTML = `
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between gap-3">
+            <span class="w-8 h-8 shrink-0 rounded-full bg-cyan-500/10 text-cyan-500 font-bold flex items-center justify-center text-xs">
+              ${verse.number}
+            </span>
+          </div>
+          <div class="quran-arabic text-right text-slate-900 dark:text-white w-full" style="font-size: ${appState.arabicFontSize}px">
+            ${verse.arabic}
+          </div>
+        </div>
+        ${appState.showTransliteration ? `<div class="text-xs font-medium text-cyan-600 dark:text-cyan-400 italic break-words">${verse.transliteration}</div>` : ''}
+        ${appState.showTranslation ? `<div class="text-slate-600 dark:text-slate-300 break-words" style="font-size: ${appState.transFontSize}px">${verse.translation}</div>` : ''}
+      `;
+      container.appendChild(verseCard);
+    }
+
+    function setActiveVerse(index) {
+      appState.currentVerseIndex = index;
+      document.getElementById('studio-verse-current').textContent = index + 1;
+      document.getElementById('player-current-verse').textContent = index + 1;
+
+      // Keep the selected verse inside the practice range.
+      if (index < appState.startVerseIndex || index > appState.endVerseIndex) {
+        appState.startVerseIndex = index;
+        appState.endVerseIndex = Math.max(appState.endVerseIndex, index);
+        updateVerseRangeSelectors();
+      }
+
+      // Show ONLY the verse whose audio is currently selected/spoken.
+      renderVersesDisplay();
+
+      // Load audio source
+      if (appState.versesData[index]) {
+        const nextAudioSrc = appState.versesData[index].audioUrl;
+        // Only reload when the verse actually changes. This prevents unrelated UI
+        // actions from interrupting audio that is already playing.
+        if (audioElement.src !== nextAudioSrc) {
+          // Set the loop flag BEFORE loading the new verse so the browser keeps
+          // the single-verse repeat state attached to the new media source.
+          audioElement.loop = isContinuousSingleVerseRepeat();
+          audioElement.src = nextAudioSrc;
+          audioElement.load();
+          // Keep the state applied after load as well.
+          audioElement.loop = isContinuousSingleVerseRepeat();
+        }
+      }
+    }
+
+    // ================= REPETITION LOOP & AUDIO CONTROLLERS =================
+    // Repeat behavior:
+    // - If Start Verse === End Verse and Repeat is ON, the current verse loops forever.
+    // - If a range contains multiple verses, Repeat 1-7 replays each verse that many
+    //   extra times before moving to the next verse.
+    function isContinuousSingleVerseRepeat() {
+      // Repeat 1-7 is always finite. Do not use native infinite looping.
+      return false;
+    }
+
+    function syncSingleVerseRepeatState() {
+      if (!audioElement) return;
+      // Native loop is used ONLY for a single-verse repeat. This makes the browser
+      // repeat the exact same loaded audio source without firing our range-advance logic.
+      audioElement.loop = isContinuousSingleVerseRepeat();
+    }
+
+    function playAudio() {
+      // Apply the repeat mode immediately before every play attempt.
+      // This is intentionally independent of the repeat counter for the
+      // Start Verse === End Verse case.
+      syncSingleVerseRepeatState();
+      if (audioElement && audioElement.src) {
+        audioElement.loop = isContinuousSingleVerseRepeat();
+        audioElement.playbackRate = appState.speed;
+        audioElement.play().then(() => {
+          appState.isPlaying = true;
+          const playBtn = document.getElementById('btn-player-play');
+          if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        }).catch(err => console.error("Audio Playback Error:", err));
+      }
+    }
+
+    function pauseAudio() {
+      audioElement.pause();
+      audioElement.loop = false;
+      appState.isPlaying = false;
+      const playBtn = document.getElementById('btn-player-play');
+      if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+    }
+
+    // Re-assert native looping after the media element changes state.
+    // This prevents another playback state transition from clearing the
+    // single-verse loop flag.
+    audioElement.addEventListener('loadedmetadata', () => {
+      if (isContinuousSingleVerseRepeat()) audioElement.loop = true;
+    });
+    audioElement.addEventListener('canplay', () => {
+      if (isContinuousSingleVerseRepeat()) audioElement.loop = true;
+    });
+    audioElement.addEventListener('playing', () => {
+      if (isContinuousSingleVerseRepeat()) audioElement.loop = true;
+    });
+
+    audioElement.addEventListener('ended', function () {
+      const currentIndex = appState.currentVerseIndex;
+
+      // REPEAT: replay the current verse the selected number of times.
+      if (appState.repeatRange && appState.repeatCount > 0 &&
+          appState.repeatVerseIndex === currentIndex && appState.repeatRemaining > 0) {
+        appState.repeatRemaining -= 1;
+        audioElement.currentTime = 0;
+        audioElement.loop = false;
+        audioElement.playbackRate = appState.speed;
+        audioElement.play().then(() => {
+          appState.isPlaying = true;
+          const playBtn = document.getElementById('btn-player-play');
+          if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        }).catch(err => {
+          appState.isPlaying = false;
+          console.error('Repeat playback error:', err);
+        });
+        return;
+      }
+
+      appState.repeatVerseIndex = null;
+      appState.repeatRemaining = 0;
+
+      // Continue inside the selected Start Verse -> End Verse range.
+      if (currentIndex < appState.endVerseIndex && currentIndex < appState.versesData.length - 1) {
+        setActiveVerse(currentIndex + 1);
+        if (appState.repeatRange && appState.repeatCount > 0) {
+          appState.repeatVerseIndex = appState.currentVerseIndex;
+          appState.repeatRemaining = appState.repeatCount;
+        }
+        playAudio();
+        return;
+      }
+
+      // LOOP: after the selected range ends, return to Start Verse.
+      if (appState.loopRange) {
+        setActiveVerse(appState.startVerseIndex);
+        if (appState.repeatRange && appState.repeatCount > 0) {
+          appState.repeatVerseIndex = appState.currentVerseIndex;
+          appState.repeatRemaining = appState.repeatCount;
+        }
+        playAudio();
+        return;
+      }
+
+      // Neither Repeat nor Loop is active: stop at the end of the selected range.
+      pauseAudio();
+    });
+
+    audioElement.addEventListener('timeupdate', () => {
+      if (audioElement.duration) {
+        const curr = audioElement.currentTime;
+        const total = audioElement.duration;
+        const progress = (curr / total) * 100;
+        document.getElementById('player-seek-bar').value = progress;
+        document.getElementById('player-time-curr').textContent = formatTime(curr);
+        document.getElementById('player-time-total').textContent = formatTime(total);
+      }
+    });
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function initializeVerseRangeSelectors() {
+      appState.startVerseIndex = 0;
+      appState.endVerseIndex = Math.max(0, appState.versesData.length - 1);
+      updateVerseRangeSelectors();
+
+      const startMinus = document.getElementById('start-verse-minus');
+      const startPlus = document.getElementById('start-verse-plus');
+      const endMinus = document.getElementById('end-verse-minus');
+      const endPlus = document.getElementById('end-verse-plus');
+
+      function applyRange(start, end, moveToStart = false) {
+        const max = Math.max(0, appState.versesData.length - 1);
+        start = Math.max(0, Math.min(start, max));
+        end = Math.max(0, Math.min(end, max));
+        if (start > end) end = start;
+        if (end < start) start = end;
+
+        appState.startVerseIndex = start;
+        appState.endVerseIndex = end;
+
+        // A manual range change cancels the old per-verse repeat counter and updates
+        // the single-verse loop state immediately.
+        appState.repeatVerseIndex = null;
+        appState.repeatRemaining = 0;
+        syncSingleVerseRepeatState();
+        updateVerseRangeSelectors();
+
+        if (start === end || moveToStart || appState.currentVerseIndex < start || appState.currentVerseIndex > end) {
+          setActiveVerse(start);
+          syncSingleVerseRepeatState();
+        }
+      }
+
+      if (startMinus) startMinus.onclick = () => applyRange(appState.startVerseIndex - 1, appState.endVerseIndex, false);
+      if (startPlus) startPlus.onclick = () => applyRange(appState.startVerseIndex + 1, appState.endVerseIndex, false);
+      if (endMinus) endMinus.onclick = () => applyRange(appState.startVerseIndex, appState.endVerseIndex - 1, false);
+      if (endPlus) endPlus.onclick = () => applyRange(appState.startVerseIndex, appState.endVerseIndex + 1, false);
+    }
+
+    function updateVerseRangeSelectors() {
+      const startValue = document.getElementById('start-verse-value');
+      const endValue = document.getElementById('end-verse-value');
+      const max = Math.max(1, appState.versesData.length);
+
+      if (startValue) startValue.textContent = Math.min(max, appState.startVerseIndex + 1);
+      if (endValue) endValue.textContent = Math.min(max, appState.endVerseIndex + 1);
+    }
+
+    // Play/Pause Button
+    document.getElementById('btn-player-play').onclick = () => {
+      if (appState.isPlaying) {
+        pauseAudio();
+      } else {
+        if (
+          appState.currentVerseIndex < appState.startVerseIndex ||
+          appState.currentVerseIndex > appState.endVerseIndex
+        ) {
+          setActiveVerse(appState.startVerseIndex);
+        }
+        if (appState.repeatRange && appState.repeatCount > 0) {
+          appState.repeatVerseIndex = appState.currentVerseIndex;
+          appState.repeatRemaining = appState.repeatCount;
+        } else {
+          appState.repeatVerseIndex = null;
+          appState.repeatRemaining = 0;
+        }
+        playAudio();
+      }
+    };
+
+    // Prev / Next Controls
+    document.getElementById('btn-player-prev').onclick = () => {
+      const previous = appState.currentVerseIndex - 1;
+      if (previous >= appState.startVerseIndex) {
+        setActiveVerse(previous);
+        if (appState.repeatRange && appState.repeatCount > 0) {
+          appState.repeatVerseIndex = appState.currentVerseIndex;
+          appState.repeatRemaining = appState.repeatCount;
+        } else {
+          appState.repeatVerseIndex = null;
+          appState.repeatRemaining = 0;
+        }
+        playAudio();
+      }
+    };
+
+    document.getElementById('btn-player-next').onclick = () => {
+      const next = appState.currentVerseIndex + 1;
+      if (next <= appState.endVerseIndex) {
+        setActiveVerse(next);
+        if (appState.repeatRange && appState.repeatCount > 0) {
+          appState.repeatVerseIndex = appState.currentVerseIndex;
+          appState.repeatRemaining = appState.repeatCount;
+        } else {
+          appState.repeatVerseIndex = null;
+          appState.repeatRemaining = 0;
+        }
+        playAudio();
+      }
+    };
+
+    // Speed Selector Toggle
+    document.getElementById('btn-player-speed').onclick = () => {
+      const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+      let currentIdx = speeds.indexOf(appState.speed);
+      appState.speed = speeds[(currentIdx + 1) % speeds.length];
+      document.getElementById('btn-player-speed').textContent = `${appState.speed}x`;
+      audioElement.playbackRate = appState.speed;
+    };
+
+    // Repeat button: OFF -> ON -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> OFF.
+    // The number is the number of EXTRA times the current verse is replayed.
+    function updateRepeatButton() {
+      const button = document.getElementById('btn-player-repeat');
+      const countDisplay = document.getElementById('repeat-count-display');
+      if (!button || !countDisplay) return;
+
+      button.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border-cyan-500/50', 'text-slate-400');
+
+      if (!appState.repeatRange) {
+        button.classList.add('text-slate-400');
+        countDisplay.textContent = '';
+        countDisplay.classList.add('hidden');
+        button.title = 'Repeat current verse: OFF';
+        button.setAttribute('aria-label', button.title);
+        return;
+      }
+
+      button.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border-cyan-500/50');
+      countDisplay.textContent = String(Math.max(1, Math.min(7, appState.repeatCount)));
+      countDisplay.classList.remove('hidden');
+      button.title = `Repeat current verse ${appState.repeatCount} extra time${appState.repeatCount === 1 ? '' : 's'} (maximum 7)`;
+      button.setAttribute('aria-label', button.title);
+    }
+
+    document.getElementById('btn-player-repeat').onclick = function () {
+      if (!appState.repeatRange) {
+        // First click: enable repeat with 1 extra replay.
+        appState.repeatRange = true;
+        appState.repeatCount = 1;
+      } else if (appState.repeatCount < 7) {
+        appState.repeatCount += 1;
+      } else {
+        // Click after 7: switch repeat OFF.
+        appState.repeatRange = false;
+        appState.repeatCount = 0;
+        appState.repeatRemaining = 0;
+        appState.repeatVerseIndex = null;
+        syncSingleVerseRepeatState();
+        updateRepeatButton();
+        return;
+      }
+
+      appState.repeatVerseIndex = appState.currentVerseIndex;
+      appState.repeatRemaining = appState.repeatCount;
+      syncSingleVerseRepeatState();
+      updateRepeatButton();
+    };
+
+    updateRepeatButton();
+
+    // Loop button: ON/OFF for the selected Start Verse -> End Verse range.
+    document.getElementById('btn-player-loop').onclick = function () {
+      appState.loopRange = !appState.loopRange;
+
+      const button = document.getElementById('btn-player-loop');
+      if (appState.loopRange) {
+        button.classList.remove('text-slate-400');
+        button.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border-cyan-500/50');
+        button.title = 'Loop selected verse range: ON';
+        button.setAttribute('aria-label', button.title);
+      } else {
+        button.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border-cyan-500/50');
+        button.classList.add('text-slate-400');
+        button.title = 'Loop selected verse range: OFF';
+        button.setAttribute('aria-label', button.title);
+      }
+    };
+
+    // ================= SURAH AUDIO DOWNLOAD =================
+    async function downloadCurrentSurah() {
+      if (!appState.currentSurah) return;
+
+      const surah = appState.currentSurah;
+      const button = document.getElementById('btn-download-surah');
+      const label = document.getElementById('lbl-download-surah');
+      const icon = button.querySelector('i');
+
+      button.disabled = true;
+      button.classList.add('opacity-70', 'cursor-wait');
+      label.textContent = 'Downloading…';
+      icon.className = 'fa-solid fa-spinner fa-spin';
+
+      try {
+        const response = await fetch(`/download-surah?id=${encodeURIComponent(surah.id)}&name=${encodeURIComponent(surah.name)}&reciter=${encodeURIComponent(appState.reciter)}`);
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || 'Download failed');
+
+        surah.downloaded = true;
+        updateDownloadIndicators();
+        label.textContent = 'Downloaded ✓';
+        icon.className = 'fa-solid fa-circle-check';
+        renderFilteredView('downloaded');
+      } catch (error) {
+        console.error('Surah download error:', error);
+        label.textContent = 'Download Failed';
+        icon.className = 'fa-solid fa-triangle-exclamation';
+        alert(`Could not download ${surah.name}.\n\n${error.message}`);
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          button.classList.remove('opacity-70', 'cursor-wait');
+          if (surah.downloaded) {
+            label.textContent = 'Downloaded ✓';
+            icon.className = 'fa-solid fa-circle-check';
+          } else {
+            label.textContent = 'Download Surah';
+            icon.className = 'fa-solid fa-download';
+          }
+        }, 1800);
+      }
+    }
+
+    function updateDownloadIndicators() {
+      const downloadedIds = SURAH_DATABASE.filter(s => s.downloaded).map(s => s.id);
+      const count = downloadedIds.length;
+
+      const badge = document.getElementById('sidebar-badge-dl');
+      if (badge) badge.textContent = count;
+
+      const dashCount = document.getElementById('dash-dl-count');
+      if (dashCount) dashCount.textContent = `${count} / 114 Surahs`;
+    }
+
+    async function refreshDownloadedState() {
+      try {
+        const response = await fetch('/api/downloaded', { cache: 'no-store' });
+        if (!response.ok) return;
+        const result = await response.json();
+        const ids = new Set((result.files || []).map(file => Number(file.surahId)));
+        SURAH_DATABASE.forEach(surah => { surah.downloaded = ids.has(surah.id); });
+        updateDownloadIndicators();
+        if (!document.getElementById('view-downloaded').classList.contains('hidden')) {
+          renderFilteredView('downloaded');
+        }
+      } catch (error) {
+        console.warn('Could not refresh download library:', error);
+      }
+    }
+
+    document.getElementById('btn-download-surah').onclick = downloadCurrentSurah;
+
+    // Restore download markers from the local Python server library.
+    function initDownloadState() {
+      refreshDownloadedState();
+    }
+
+    // Toggle Memorized Button
+    document.getElementById('btn-toggle-memorized-studio').onclick = () => {
+      if (!appState.currentSurah) return;
+      const id = appState.currentSurah.id;
+      const index = appState.memorizedIds.indexOf(id);
+
+      if (index > -1) {
+        appState.memorizedIds.splice(index, 1);
+      } else {
+        appState.memorizedIds.push(id);
+      }
+
+      localStorage.setItem('eqh_memorized', JSON.stringify(appState.memorizedIds));
+      updateMemorizedButtonState();
+      renderDashboard();
+    };
+
+    function updateMemorizedButtonState() {
+      if (!appState.currentSurah) return;
+      const isMem = appState.memorizedIds.includes(appState.currentSurah.id);
+      const btn = document.getElementById('btn-toggle-memorized-studio');
+      const lbl = document.getElementById('lbl-studio-memorized');
+
+      if (isMem) {
+        btn.className = "px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-semibold text-xs shadow-md transition-all flex items-center gap-2";
+        lbl.textContent = "Memorized ✓";
+      } else {
+        btn.className = "px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold text-xs transition-all flex items-center gap-2";
+        lbl.textContent = "Mark as Memorized";
+      }
+    }
+
+    // ================= SETTINGS CONTROLLERS =================
+    function initSettings() {
+      const arabicSlider = document.getElementById('setting-arabic-slider');
+      const transSlider = document.getElementById('setting-trans-slider');
+      const translitToggle = document.getElementById('setting-toggle-transliteration');
+      const transToggle = document.getElementById('setting-toggle-translation');
+      const reciterSelect = document.getElementById('setting-reciter-select');
+
+      arabicSlider.value = appState.arabicFontSize;
+      document.getElementById('setting-arabic-val').textContent = `${appState.arabicFontSize}px`;
+      
+      transSlider.value = appState.transFontSize;
+      document.getElementById('setting-trans-val').textContent = `${appState.transFontSize}px`;
+
+      reciterSelect.value = appState.reciter;
+
+      arabicSlider.oninput = (e) => {
+        appState.arabicFontSize = e.target.value;
+        document.getElementById('setting-arabic-val').textContent = `${e.target.value}px`;
+        localStorage.setItem('eqh_arabic_size', e.target.value);
+        if (appState.currentSurah) renderVersesDisplay();
+      };
+
+      transSlider.oninput = (e) => {
+        appState.transFontSize = e.target.value;
+        document.getElementById('setting-trans-val').textContent = `${e.target.value}px`;
+        localStorage.setItem('eqh_trans_size', e.target.value);
+        if (appState.currentSurah) renderVersesDisplay();
+      };
+
+      translitToggle.onchange = (e) => {
+        appState.showTransliteration = e.target.checked;
+        localStorage.setItem('eqh_show_translit', e.target.checked);
+        if (appState.currentSurah) renderVersesDisplay();
+      };
+
+      transToggle.onchange = (e) => {
+        appState.showTranslation = e.target.checked;
+        localStorage.setItem('eqh_show_trans', e.target.checked);
+        if (appState.currentSurah) renderVersesDisplay();
+      };
+
+      reciterSelect.onchange = (e) => {
+        appState.reciter = e.target.value;
+        localStorage.setItem('eqh_reciter', e.target.value);
+        const nameMap = {
+          'ar.alafasy': 'Mishary Rashid Alafasy',
+          'ar.abdulbasitmurattal': 'Abdul Basit (Murattal)',
+          'ar.husary': 'Mahmoud Khalil Al-Husary',
+          'ar.minshawi': 'Mohamed Siddiq Al-Minshawi',
+          'ar.sudais': 'Abdur-Rahman As-Sudais'
+        };
+        document.getElementById('sidebar-reciter-name').textContent = nameMap[e.target.value] || e.target.value;
+        document.getElementById('player-reciter').textContent = nameMap[e.target.value] || e.target.value;
+
+        if (appState.currentSurah) loadSurahIntoStudio(appState.currentSurah.id, false);
+      };
+
+      document.getElementById('btn-reset-data').onclick = () => {
+        if (confirm("Are you sure you want to reset all memorization statistics?")) {
+          localStorage.clear();
+          location.reload();
+        }
+      };
+    }
+
+    // Dark Mode Theme Toggle
+    function initTheme() {
+      const toggleBtn = document.getElementById('theme-toggle-btn');
+      toggleBtn.onclick = () => {
+        document.documentElement.classList.toggle('dark');
+      };
+    }
+    // Sidebar collapse/expand: click the Easy Quran Hafiz icon/header
+    function initSidebarCollapse() {
+      const sidebar = document.getElementById('app-sidebar');
+      const brand = document.getElementById('sidebar-brand-toggle');
+      if (!sidebar || !brand) return;
+
+      const setCollapsed = (collapsed) => {
+        sidebar.classList.toggle('is-collapsed', collapsed);
+        localStorage.setItem('eqh_sidebar_collapsed', collapsed ? '1' : '0');
+        brand.title = collapsed ? 'Expand navigation' : 'Collapse navigation';
+        brand.setAttribute('aria-label', brand.title);
+      };
+
+      setCollapsed(localStorage.getItem('eqh_sidebar_collapsed') === '1');
+      const toggle = () => setCollapsed(!sidebar.classList.contains('is-collapsed'));
+      brand.addEventListener('click', toggle);
+      brand.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggle();
+        }
+      });
+    }
+    initSidebarCollapse();
+    initDownloadState();
+
+  </script>
+</body>
+</html>
